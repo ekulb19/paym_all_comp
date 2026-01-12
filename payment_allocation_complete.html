@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Allocation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            max-width: 500px;
+            width: 100%;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            font-size: 28px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            font-size: 13px;
+            margin-bottom: 32px;
+        }
+        .step {
+            display: none;
+        }
+        .step.active {
+            display: block;
+        }
+        .step-label {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        .step-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 16px;
+            font-size: 13px;
+            text-transform: uppercase;
+        }
+        .box {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .amount-display {
+            font-size: 32px;
+            font-weight: bold;
+            color: #2563eb;
+            margin-bottom: 16px;
+        }
+        .dropdown {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            max-height: 150px;
+            overflow-y: auto;
+            margin-bottom: 16px;
+        }
+        .dropdown-item {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            background: white;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        .dropdown-item:hover {
+            background: #f5f5f5;
+        }
+        .dropdown-item.selected {
+            background: #2563eb;
+            color: white;
+        }
+        .dropdown-item:last-child {
+            border-bottom: none;
+        }
+        .label {
+            font-weight: bold;
+            font-size: 13px;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        .apply-section {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            margin-bottom: 24px;
+        }
+        .remaining-text {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 12px;
+        }
+        button {
+            padding: 10px 32px;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .btn-apply {
+            background: #a1a1a1;
+            color: white;
+            cursor: not-allowed;
+        }
+        .btn-apply:not(:disabled) {
+            background: #2563eb;
+            cursor: pointer;
+        }
+        .btn-apply:not(:disabled):hover {
+            background: #1d4ed8;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .btn-cancel {
+            background: #999;
+            color: white;
+        }
+        .btn-cancel:hover {
+            background: #777;
+        }
+        .btn-prev {
+            background: #ddd;
+            color: #333;
+            flex: 1;
+        }
+        .btn-prev:hover {
+            background: #ccc;
+        }
+        .btn-next {
+            background: #2563eb;
+            color: white;
+            flex: 1;
+        }
+        .btn-next:hover {
+            background: #1d4ed8;
+        }
+        .btn-ok {
+            background: #2563eb;
+            color: white;
+            flex: 1;
+        }
+        .btn-ok:hover:not(:disabled) {
+            background: #1d4ed8;
+        }
+        .btn-ok:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .summary {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            padding: 16px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+        }
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
+        }
+        .summary-row:last-child {
+            border-bottom: none;
+            font-weight: bold;
+            font-size: 15px;
+            padding-top: 12px;
+        }
+        .summary-row.success {
+            color: #16a34a;
+        }
+        .summary-row.warning {
+            color: #dc2626;
+        }
+        .status {
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+            font-size: 13px;
+            display: none;
+        }
+        .status.show {
+            display: block;
+        }
+        .status.success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #86efac;
+        }
+        .status.warning {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fcd34d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Now Apply the $10,000</h1>
+        <p class="subtitle">Select where to apply the $10,000 payment and enter amounts. All funds must be allocated.</p>
+
+        <!-- STEP 1 -->
+        <div class="step active" id="step1">
+            <div class="step-label">Step 1 of 7</div>
+            <div class="step-title">Number of Payments @ $2,500</div>
+            <div class="box" style="text-align: center;">
+                <input type="number" id="paymentInput" placeholder="0" min="0" value="0" style="width: 100px; text-align: center;">
+                <div style="font-size: 11px; color: #999; margin-top: 4px;">payments</div>
+            </div>
+        </div>
+
+        <!-- STEP 2-6 Template -->
+        <div class="step" id="step2">
+            <div class="step-label">Step 2 of 7</div>
+            <div class="box">
+                <div class="amount-display" id="remaining2">$10,000.00</div>
+                <div class="label">Apply to:</div>
+                <div class="dropdown" id="dropdown2">
+                    <div class="dropdown-item selected" data-key="principal">
+                        <span>Principal</span>
+                        <span>$25,442.73</span>
+                    </div>
+                    <div class="dropdown-item" data-key="payoff">
+                        <span>Payoff</span>
+                        <span>$25,442.73</span>
+                    </div>
+                    <div class="dropdown-item" data-key="lateFees">
+                        <span>Late Fees</span>
+                        <span style="color: #dc2626;">-$1,000.00</span>
+                    </div>
+                    <div class="dropdown-item" data-key="serviceFees">
+                        <span>Service Fees</span>
+                        <span>$500.00</span>
+                    </div>
+                    <div class="dropdown-item" data-key="escrow">
+                        <span>Escrow</span>
+                        <span>$2,500.00</span>
+                    </div>
+                </div>
+                <div class="label">Amount:</div>
+                <input type="number" id="amount2" placeholder="0.00" value="">
+            </div>
+            <div class="apply-section" id="applySection2">
+                <div class="remaining-text" id="remainingText2">You still have $10,000 to apply</div>
+            </div>
+        </div>
+
+        <div class="step" id="step3">
+            <div class="step-label">Step 3 of 7</div>
+            <div class="box">
+                <div class="amount-display" id="remaining3">$10,000.00</div>
+                <div class="label">Apply to:</div>
+                <div class="dropdown" id="dropdown3">
+                    <div class="dropdown-item" data-key="principal">
+                        <span>Principal</span>
+                        <span>$25,442.73</span>
+                    </div>
+                    <div class="dropdown-item selected" data-key="payoff">
+                        <span>Payoff</span>
+                        <span>$25,442.73</span>
+                    </div>
+                    <div class="dropdown-item" data-key="lateFees">
+                        <span>Late Fees</span>
+                        <span style="color: #dc2626;">-$1,000.00</span>
+                    </div>
+                    <div class="dropdown-item" data-key="serviceFees">
+                        <span>Service Fees</span>
+                        <span>$500.00</span>
+                    </div>
+                    <div class="dropdown-item" data-key="escrow">
+                        <span>Escrow</span>
+                        <span>$2,500.00</span>
+                    </div>
+                </div>
+                <div class="label">Amount:</div>
+                <input type="number" id="amount3" placeholder="0.00" value="">
+            </div>
+            <div class="apply-section" id="applySection3">
+                <div class="remaining-text" id="remainingText3">You still have $10,000 to apply</div>
+            </div>
+        </div>
+
+        <div class="step" id="step4">
+            <div class="step-label">Step 4 of 7</div>
+            <div class="box">
+                <div class="amount-display" id="remaining4">$10,000.00</div>
+                <div class="label">Apply to:</div>
+                <div class="dropdown" id="dropdown4">
+                    <div class="dropdown-item" data-key="principal">
+                        <span>Principal</span>
+                        <span>$25,442.73</span>
+                    </div>
+                    <div class="dropdown-item" data-key="payoff">
+                        <span>Payoff</span>
+                        <span>$25,442.73</span>
+                    </div>
+                    <div class="dropdown-item selected" data-key="lateFees">
+                        <span>Late Fees</span>
+                        <span style="color: #dc2626;">-$1,000.00</span>
+                    </div>
+                    <div class="dropdown-item" data-key="serviceFees">
+                        <span>Service Fees</span>
+                        <span>$500.00</span>
+                    </div>
+                    <div class="dropdown-item" data-key="escrow">
+                        <span>Escrow</span>
+                        <span>$2,500.00</span>
+                    </div>
+                </div>
+                <div class="label">Amount:</div>
+                <input type="number" id="amount4" placeholder="0.00" value="">
+            </div>
+            <div class="apply-section" id="applySection4">
+                <div class="remaining-text" id="remainingText4">You still have $10,000 to apply</div>
+            </div>
+        </div>
+
+        <div class="step" id="step5">
+            <div class="step-label">Step 5 of 7</div>
+            <div class="box">
+                <div class="amount-display" id="remaining5">$10,000.00</div>
+                <div class="label">Apply to:</div>
+                <div class="dropdown" id="dropdown5">
+                    <div class="dropdown-item" data-key="principal">
+                        <span>Principal</span>
+                        <span>$25,442.73</span>
+                    </div>
+                    <div class="dropdown-item" data-key="payoff">
+                        <span>Payoff</span>
+                        <span>$25,442.73</span>
+                    </div>
+                    <div class="dropdown-item" data-key="lateFees">
+                        <span>Late Fees</span>
+                        <span style="color: #dc2626;">-$1,000.00</span>
+                    </div>
+                    <div class="dropdown-item selected" data-key="serviceFees">
+                        <span>Service Fees</span>
+                        <span>$500.00</span>
+                    </div>
+                    <div class="dropdown-item" data-key="escrow">
+                        <span>Escrow</span>
+                        <span>$2,500.00</span>
+                    </div>
+                </div>
+                <div class="label">Amount:</div>
+                <input type="number" id="amount5" placeholder="0.00" value="">
+            </div>
+            <div class="apply-section" id="applySection5">
+                <div class="remaining-text" id="remainingText5">You still have $10,000 to apply</div>
+            </div>
+        </div>
+
+        <div class="step" id="step6">
+            <div class="step-label">Step 6 of 7</div>
+            <div class="box">
+                <div class="amount-display" id="remaining6">$10,000.00</div>
+                <div class="label">Apply to:</div>
+                <div class="dropdown" id="dropdown6">
+                    <div class="dropdown-item" data-key="principal">
+                        <span>Principal</span>
+                        <span>$25,442.73</span>
+                    </div>
+                    <div class="dropdown-item" data-key="payoff">
+                        <span>Payoff</span>
+                        <span>$25,442.73</span>
+                    </div>
+                    <div class="dropdown-item" data-key="lateFees">
+                        <span>Late Fees</span>
+                        <span style="color: #dc2626;">-$1,000.00</span>
+                    </div>
+                    <div class="dropdown-item" data-key="serviceFees">
+                        <span>Service Fees</span>
+                        <span>$500.00</span>
+                    </div>
+                    <div class="dropdown-item selected" data-key="escrow">
+                        <span>Escrow</span>
+                        <span>$2,500.00</span>
+                    </div>
+                </div>
+                <div class="label">Amount:</div>
+                <input type="number" id="amount6" placeholder="0.00" value="">
+            </div>
+            <div class="apply-section" id="applySection6">
+                <div class="remaining-text" id="remainingText6">You still have $10,000 to apply</div>
+            </div>
+        </div>
+
+        <!-- STEP 7: REVIEW -->
+        <div class="step" id="step7">
+            <div class="step-label">Step 7 of 7 - Review</div>
+            <div class="summary">
+                <div class="summary-row">
+                    <span>Total to Allocate:</span>
+                    <span>$10,000.00</span>
+                </div>
+                <div class="summary-row">
+                    <span>Total Allocated:</span>
+                    <span id="totalAllocated">$0.00</span>
+                </div>
+                <div class="summary-row" id="remainingRow">
+                    <span>Remaining:</span>
+                    <span id="totalRemaining">$10,000.00</span>
+                </div>
+            </div>
+            <div class="status" id="status"></div>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn-cancel">Cancel</button>
+            <button class="btn-prev" id="prevBtn" style="display: none;">Back</button>
+            <button class="btn-next" id="nextBtn">Next</button>
+            <button class="btn-ok" id="okBtn" style="display: none;" disabled>OK</button>
+            <button class="btn-apply" id="applyBtn2" style="display: none;" disabled>Apply</button>
+            <button class="btn-apply" id="applyBtn3" style="display: none;" disabled>Apply</button>
+            <button class="btn-apply" id="applyBtn4" style="display: none;" disabled>Apply</button>
+            <button class="btn-apply" id="applyBtn5" style="display: none;" disabled>Apply</button>
+            <button class="btn-apply" id="applyBtn6" style="display: none;" disabled>Apply</button>
+        </div>
+    </div>
+
+    <script>
+        var currentStep = 1;
+        var data = {
+            nextPayment: 0,
+            principal: 0,
+            payoff: 0,
+            lateFees: 0,
+            serviceFees: 0,
+            escrow: 0
+        };
+
+        function formatMoney(num) {
+            return '$' + num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+
+        function showStep(step) {
+            var steps = document.querySelectorAll('.step');
+            for (var i = 0; i < steps.length; i++) {
+                steps[i].classList.remove('active');
+            }
+            document.getElementById('step' + step).classList.add('active');
+            currentStep = step;
+
+            var prevBtn = document.getElementById('prevBtn');
+            var nextBtn = document.getElementById('nextBtn');
+            var okBtn = document.getElementById('okBtn');
+
+            prevBtn.style.display = step === 1 ? 'none' : 'block';
+            nextBtn.style.display = step === 7 ? 'none' : 'block';
+            okBtn.style.display = step === 7 ? 'block' : 'none';
+
+            if (step >= 2 && step <= 6) {
+                updateApplySection(step);
+            }
+
+            if (step === 7) {
+                updateReview();
+            }
+        }
+
+        function getTotal() {
+            var total = 0;
+            for (var key in data) {
+                total += data[key];
+            }
+            return total;
+        }
+
+        function updateApplySection(step) {
+            var total = getTotal();
+            var remaining = 10000 - total;
+            document.getElementById('remaining' + step).textContent = formatMoney(remaining);
+            
+            var text = document.getElementById('remainingText' + step);
+            var btn = document.getElementById('applyBtn' + step);
+            
+            btn.style.display = 'block';
+            
+            if (Math.abs(remaining) < 0.01) {
+                text.textContent = 'All funds allocated!';
+                btn.disabled = false;
+            } else {
+                text.textContent = 'You still have ' + formatMoney(remaining) + ' to apply';
+                btn.disabled = true;
+            }
+        }
+
+        function updateReview() {
+            var total = getTotal();
+            var remaining = 10000 - total;
+            var balanced = Math.abs(remaining) < 0.01;
+
+            document.getElementById('totalAllocated').textContent = formatMoney(total);
+            document.getElementById('totalRemaining').textContent = formatMoney(remaining);
+
+            var row = document.getElementById('remainingRow');
+            row.classList.remove('success', 'warning');
+            row.classList.add(balanced ? 'success' : 'warning');
+
+            var status = document.getElementById('status');
+            if (balanced) {
+                status.className = 'status show success';
+                status.textContent = 'All funds allocated correctly!';
+            } else {
+                status.className = 'status show warning';
+                status.textContent = 'You must allocate exactly $10,000. ' + formatMoney(remaining) + ' remaining';
+            }
+
+            document.getElementById('okBtn').disabled = !balanced;
+        }
+
+        document.getElementById('paymentInput').addEventListener('input', function() {
+            var count = parseInt(this.value) || 0;
+            data.nextPayment = count * 2500;
+        });
+
+        for (var step = 2; step <= 6; step++) {
+            setupStepHandlers(step);
+        }
+
+        function setupStepHandlers(step) {
+            var dropdown = document.getElementById('dropdown' + step);
+            var amountInput = document.getElementById('amount' + step);
+            var applyBtn = document.getElementById('applyBtn' + step);
+            var text = document.getElementById('remainingText' + step);
+            var selectedKey = dropdown.querySelector('.dropdown-item.selected').getAttribute('data-key');
+
+            var items = dropdown.querySelectorAll('.dropdown-item');
+            for (var i = 0; i < items.length; i++) {
+                items[i].addEventListener('click', function() {
+                    var selected = dropdown.querySelector('.dropdown-item.selected');
+                    if (selected) selected.classList.remove('selected');
+                    this.classList.add('selected');
+                    selectedKey = this.getAttribute('data-key');
+                    amountInput.value = '';
+                    updateApplySection(step);
+                });
+            }
+
+            amountInput.addEventListener('input', function() {
+                data[selectedKey] = parseFloat(this.value) || 0;
+                updateApplySection(step);
+            });
+
+            applyBtn.addEventListener('click', function() {
+                var total = getTotal();
+                var remaining = 10000 - total;
+                if (Math.abs(remaining) < 0.01) {
+                    text.textContent = 'Your transaction is complete!';
+                    applyBtn.disabled = true;
+                }
+            });
+        }
+
+        document.getElementById('nextBtn').addEventListener('click', function() {
+            if (currentStep < 7) showStep(currentStep + 1);
+        });
+
+        document.getElementById('prevBtn').addEventListener('click', function() {
+            if (currentStep > 1) showStep(currentStep - 1);
+        });
+
+        showStep(1);
+    </script>
+</body>
+</html>
