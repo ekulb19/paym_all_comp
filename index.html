@@ -112,10 +112,13 @@
             color: #333;
         }
         .apply-section {
-            display: block;
+            display: none;
             text-align: center;
             margin-top: 20px;
             margin-bottom: 24px;
+        }
+        .apply-section.show {
+            display: block;
         }
         .remaining-text {
             font-size: 13px;
@@ -487,6 +490,18 @@
             nextBtn.style.display = step === 7 ? 'none' : 'block';
             okBtn.style.display = step === 7 ? 'block' : 'none';
 
+            var applyBtn2 = document.getElementById('applyBtn2');
+            var applyBtn3 = document.getElementById('applyBtn3');
+            var applyBtn4 = document.getElementById('applyBtn4');
+            var applyBtn5 = document.getElementById('applyBtn5');
+            var applyBtn6 = document.getElementById('applyBtn6');
+
+            if (applyBtn2) applyBtn2.style.display = step === 2 ? 'block' : 'none';
+            if (applyBtn3) applyBtn3.style.display = step === 3 ? 'block' : 'none';
+            if (applyBtn4) applyBtn4.style.display = step === 4 ? 'block' : 'none';
+            if (applyBtn5) applyBtn5.style.display = step === 5 ? 'block' : 'none';
+            if (applyBtn6) applyBtn6.style.display = step === 6 ? 'block' : 'none';
+
             if (step >= 2 && step <= 6) {
                 updateApplySection(step);
             }
@@ -511,8 +526,7 @@
             
             var text = document.getElementById('remainingText' + step);
             var btn = document.getElementById('applyBtn' + step);
-            
-            btn.style.display = 'block';
+            var section = document.getElementById('applySection' + step);
             
             if (Math.abs(remaining) < 0.01) {
                 text.textContent = 'All funds allocated!';
@@ -521,6 +535,7 @@
                 text.textContent = 'You still have ' + formatMoney(remaining) + ' to apply';
                 btn.disabled = true;
             }
+            section.classList.add('show');
         }
 
         function updateReview() {
